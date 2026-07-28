@@ -1,0 +1,78 @@
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Avatar,
+  Box,
+  IconButton,
+  TextField,
+  InputAdornment,
+} from "@mui/material";
+
+import SearchIcon from "@mui/icons-material/Search";
+import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+
+export default function Topbar() {
+  return (
+    <AppBar
+      position="fixed"
+      elevation={0}
+      color="inherit"
+      sx={{
+        width: "calc(100% - 270px)",
+        ml: "270px",
+        borderBottom: "1px solid #E5E7EB",
+        bgcolor: "#fff",
+      }}
+    >
+      <Toolbar>
+
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            flexGrow: 1,
+          }}
+        >
+          Dashboard
+        </Typography>
+
+        <TextField
+          size="small"
+          placeholder="Search..."
+          sx={{
+            width: 250,
+            mr: 3,
+            bgcolor: "#F8FAFC",
+            borderRadius: 3,
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        <IconButton>
+          <DarkModeOutlinedIcon />
+        </IconButton>
+
+        <IconButton sx={{ mx: 1 }}>
+          <NotificationsNoneIcon />
+        </IconButton>
+
+        <Avatar
+          sx={{
+            bgcolor: "#2563EB",
+          }}
+        >
+          P
+        </Avatar>
+
+      </Toolbar>
+    </AppBar>
+  );
+}
