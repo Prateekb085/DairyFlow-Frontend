@@ -39,22 +39,24 @@ export default function Topbar() {
         </Typography>
 
         <TextField
-          size="small"
-          placeholder="Search..."
-          sx={{
-            width: 250,
-            mr: 3,
-            bgcolor: "#F8FAFC",
-            borderRadius: 3,
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
+  size="small"
+  placeholder="Search..."
+  sx={{
+    width: 250,
+    mr: 3,
+    bgcolor: "#F8FAFC",
+    borderRadius: 3,
+  }}
+  slotProps={{
+    input: {
+      startAdornment: (
+        <InputAdornment position="start">
+          <SearchIcon />
+        </InputAdornment>
+      ),
+    },
+  }}
+/>
 
         <IconButton>
           <DarkModeOutlinedIcon />

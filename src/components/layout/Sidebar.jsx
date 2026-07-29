@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import {
   Box,
   Typography,
@@ -15,12 +17,12 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 const menus = [
-  { name: "Dashboard", icon: <DashboardIcon /> },
-  { name: "Farmers", icon: <PeopleIcon /> },
-  { name: "Milk Entries", icon: <OpacityIcon /> },
-  { name: "Payments", icon: <PaymentsIcon /> },
-  { name: "Reports", icon: <AssessmentIcon /> },
-  { name: "Settings", icon: <SettingsIcon /> },
+  { name: "Dashboard", path: "/dashboard", icon: <DashboardIcon /> },
+  { name: "Farmers", path: "/farmers", icon: <PeopleIcon /> },
+  { name: "Milk Entries", path: "/milk", icon: <OpacityIcon /> },
+  { name: "Payments", path: "/payments", icon: <PaymentsIcon /> },
+  { name: "Reports", path: "/reports", icon: <AssessmentIcon /> },
+  { name: "Settings", path: "/settings", icon: <SettingsIcon /> },
 ];
 
 export default function Sidebar() {
@@ -57,6 +59,8 @@ export default function Sidebar() {
       <List>
         {menus.map((menu) => (
           <ListItemButton
+  component={Link}
+  to={menu.path}
   key={menu.name}
   sx={{
     mx: 2,
@@ -65,16 +69,10 @@ export default function Sidebar() {
     borderRadius: 3,
     color: "#64748B",
     transition: "all 0.25s ease",
-
     "&:hover": {
       bgcolor: "#EEF4FF",
       color: "#2563EB",
       transform: "translateX(4px)",
-    },
-
-    "&.active": {
-      bgcolor: "#2563EB",
-      color: "#fff",
     },
   }}
 >
