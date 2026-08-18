@@ -3,6 +3,7 @@ import api from "../../services/api";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
 
+
 import {
   Paper,
   Typography,
@@ -15,6 +16,10 @@ import {
   TextField,
   MenuItem,
   Stack,
+  IconButton,
+  Tooltip,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
@@ -23,6 +28,10 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
+
+
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 export default function MilkEntries() {
 
@@ -33,6 +42,12 @@ export default function MilkEntries() {
     const [farmers, setFarmers] = useState([]);
 
   const [open, setOpen] = useState(false);
+
+  const [editingId, setEditingId] = useState(null);
+
+  const [searchText, setSearchText] = useState("");
+const [filterMilkType, setFilterMilkType] = useState("");
+const [filterShift, setFilterShift] = useState("");
 
   const [milkEntry, setMilkEntry] = useState({
     farmerId: "",
@@ -45,9 +60,19 @@ export default function MilkEntries() {
     totalAmount: "",
   });
 
+const [snackbar, setSnackbar] = useState({
+  open: false,
+  message: "",
+  severity: "success",
+});
 
-
-
+const showSnackbar = (message, severity = "success") => {
+  setSnackbar({
+    open: true,
+    message,
+    severity,
+  });
+};
 
   useEffect(() => {
     loadMilkEntries();
@@ -78,12 +103,26 @@ export default function MilkEntries() {
 };
 
 
-  const handleOpen = () => {
+const handleOpen = () => {
+  setEditingId(null);
+
+  setMilkEntry({
+    farmerId: "",
+    collectionDate: "",
+    shift: "Morning",
+    milkType: "Cow",
+    quantity: "",
+    fat: "",
+    ratePerLiter: "",
+    totalAmount: "",
+  });
+
   setOpen(true);
 };
 
 const handleClose = () => {
   setOpen(false);
+  setEditingId(null);
 
   setMilkEntry({
     farmerId: "",
@@ -97,36 +136,95 @@ const handleClose = () => {
   });
 };
 
+const handleEdit = (row) => {
+  setEditingId(row.id);
+
+  setMilkEntry({
+    farmerId: row.farmer?.id || "",
+    collectionDate: row.collectionDate || "",
+    shift: row.shift || "Morning",
+    milkType: row.milkType || "Cow",
+    quantity: row.quantity || "",
+    fat: row.fat || "",
+    ratePerLiter: row.ratePerLiter || "",
+    totalAmount: row.totalAmount || "",
+  });
+
+  setOpen(true);
+};
+
+const handleDelete = (id) => {
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this milk entry?"
+  );
+
+  if (!confirmDelete) {
+    return;
+  }
+
+  api
+    .delete(`/milk/${id}`)
+    .then(() => {
+      loadMilkEntries();
+      showSnackbar("Milk Entry Deleted Successfully", "success");
+    })
+    .catch((error) => {
+      console.error("Delete Error:", error);
+      showSnackbar("Failed to Delete Milk Entry", "error");
+    });
+};
+
 const saveMilkEntry = () => {
 
   const request = {
     farmer: {
-      id: milkEntry.farmerId,
+      id: Number(milkEntry.farmerId),
     },
     collectionDate: milkEntry.collectionDate,
     shift: milkEntry.shift,
     milkType: milkEntry.milkType,
     quantity: Number(milkEntry.quantity),
     fat: Number(milkEntry.fat),
-    ratePerLiter: Number(milkEntry.ratePerLiter),
-    totalAmount: Number(milkEntry.totalAmount),
   };
 
-  api
-    .post("/milk", request)
-    .then(() => {
+  if (editingId !== null) {
 
-      handleClose();
+    api
+      .put(`/milk/${editingId}`, request)
+      .then(() => {
+        handleClose();
+        loadMilkEntries();
+        showSnackbar("Milk Entry Updated Successfully", "success");
+      })
+      .catch((error) => {
+        console.error("Update Error:", error);
+        console.error("Response:", error.response);
+        showSnackbar(
+          error.response?.data?.message ||
+          "Failed to Update Milk Entry",
+          "error"
+        );
+      });
 
-      loadMilkEntries();
+  } else {
 
-      alert("Milk Entry Added Successfully");
-
-    })
-    .catch((error) => {
-      console.error(error);
-      alert("Failed to Save Milk Entry");
-    });
+    api
+      .post("/milk", request)
+      .then(() => {
+        handleClose();
+        loadMilkEntries();
+        showSnackbar("Milk Entry Added Successfully", "success");
+      })
+      .catch((error) => {
+        console.error("Save Error:", error);
+        console.error("Response:", error.response);
+        showSnackbar(
+          error.response?.data?.message ||
+          "Failed to Save Milk Entry",
+          "error"
+        );
+      });
+  }
 };
 
 
@@ -140,7 +238,8 @@ const saveMilkEntry = () => {
   field: "farmerName",
   headerName: "Farmer",
   flex: 1,
-  valueGetter: (_, row) => row?.farmer?.farmerName || "",
+  renderCell: (params) =>
+    params.row?.farmer?.farmerName || "Unknown",
 },
     {
       field: "collectionDate",
@@ -177,7 +276,63 @@ const saveMilkEntry = () => {
       headerName: "Amount",
       width: 120,
     },
+
+    {
+  field: "actions",
+  headerName: "Actions",
+  width: 130,
+  sortable: false,
+  filterable: false,
+  renderCell: (params) => (
+    <>
+      <Tooltip title="Edit">
+        <IconButton
+          color="primary"
+          onClick={() => handleEdit(params.row)}
+        >
+          <EditIcon />
+        </IconButton>
+      </Tooltip>
+
+      <Tooltip title="Delete">
+        <IconButton
+          color="error"
+          onClick={() => handleDelete(params.row.id)}
+        >
+          <DeleteIcon />
+        </IconButton>
+      </Tooltip>
+    </>
+  ),
+},
   ];
+
+  const filteredMilkEntries = milkEntries.filter((entry) => {
+
+  const farmerName =
+    entry.farmer?.farmerName?.toLowerCase() || "";
+
+  const search =
+    searchText.toLowerCase();
+
+  const matchesSearch =
+    farmerName.includes(search);
+
+  const matchesMilkType =
+    filterMilkType === "" ||
+    entry.milkType === filterMilkType;
+
+  const matchesShift =
+    filterShift === "" ||
+    entry.shift === filterShift;
+
+  return (
+    matchesSearch &&
+    matchesMilkType &&
+    matchesShift
+  );
+});
+
 
   return (
     <DashboardLayout>
@@ -207,6 +362,63 @@ const saveMilkEntry = () => {
 
         </Box>
 
+        <Box
+  sx={{
+    display: "flex",
+    gap: 2,
+    mb: 3,
+    flexWrap: "wrap",
+  }}
+>
+  <TextField
+    label="Search Farmer"
+    size="small"
+    value={searchText}
+    onChange={(e) => setSearchText(e.target.value)}
+    sx={{ minWidth: 220 }}
+  />
+
+  <TextField
+    select
+    label="Milk Type"
+    size="small"
+    value={filterMilkType}
+    onChange={(e) => setFilterMilkType(e.target.value)}
+    sx={{ minWidth: 160 }}
+  >
+    <MenuItem value="">All</MenuItem>
+    <MenuItem value="Cow">Cow</MenuItem>
+    <MenuItem value="Buffalo">Buffalo</MenuItem>
+  </TextField>
+
+  <TextField
+    select
+    label="Shift"
+    size="small"
+    value={filterShift}
+    onChange={(e) => setFilterShift(e.target.value)}
+    sx={{ minWidth: 160 }}
+  >
+    <MenuItem value="">All</MenuItem>
+    <MenuItem value="Morning">Morning</MenuItem>
+    <MenuItem value="Evening">Evening</MenuItem>
+  </TextField>
+
+  <Button
+    variant="outlined"
+    onClick={() => {
+      setSearchText("");
+      setFilterMilkType("");
+      setFilterShift("");
+    }}
+  >
+    Clear Filters
+  </Button>
+</Box>
+
+
+
+
         <Paper
           sx={{
             height: 600,
@@ -214,7 +426,7 @@ const saveMilkEntry = () => {
           }}
         >
           <DataGrid
-            rows={milkEntries}
+            rows={filteredMilkEntries}
             columns={columns}
             pageSizeOptions={[5,10,20]}
             initialState={{
@@ -235,7 +447,9 @@ const saveMilkEntry = () => {
   fullWidth
   maxWidth="sm"
 >
-  <DialogTitle>Add Milk Entry</DialogTitle>
+  <DialogTitle>
+  {editingId !== null ? "Edit Milk Entry" : "Add Milk Entry"}
+</DialogTitle>
 
   <DialogContent>
     <Stack spacing={2} mt={1}>
@@ -386,7 +600,7 @@ const saveMilkEntry = () => {
   variant="contained"
   onClick={saveMilkEntry}
 >
-  Save
+  {editingId !== null ? "Update" : "Save"}
 </Button>
 
   </DialogActions>
@@ -395,6 +609,35 @@ const saveMilkEntry = () => {
 
 
       </Box>
+
+
+<Snackbar
+  open={snackbar.open}
+  autoHideDuration={3000}
+  onClose={() =>
+    setSnackbar({
+      ...snackbar,
+      open: false,
+    })
+  }
+  anchorOrigin={{
+    vertical: "bottom",
+    horizontal: "right",
+  }}
+>
+  <Alert
+    severity={snackbar.severity}
+    variant="filled"
+    onClose={() =>
+      setSnackbar({
+        ...snackbar,
+        open: false,
+      })
+    }
+  >
+    {snackbar.message}
+  </Alert>
+</Snackbar>
 
     </DashboardLayout>
   );
