@@ -102,6 +102,58 @@ const showSnackbar = (message, severity = "success") => {
     });
 };
 
+const fetchRate = async (milkType, fat) => {
+  if (!milkType || fat === "" || fat === null) {
+    setMilkEntry((prev) => ({
+      ...prev,
+      ratePerLiter: "",
+      totalAmount: 0,
+    }));
+    return;
+  }
+
+  try {
+    const response = await api.get("/rates/search", {
+      params: {
+        milkType: milkType,
+        fat: Number(fat),
+      },
+    });
+
+    const rate = Number(response.data.ratePerLiter);
+
+    setMilkEntry((prev) => ({
+      ...prev,
+      ratePerLiter: rate,
+      totalAmount: Number(prev.quantity || 0) * rate,
+    }));
+
+  } catch (error) {
+    console.error("Rate Error:", error);
+    console.error("Rate Response:", error.response);
+
+    setMilkEntry((prev) => ({
+      ...prev,
+      ratePerLiter: "",
+      totalAmount: 0,
+    }));
+
+    showSnackbar(
+      error.response?.data?.message || "Rate not found",
+      "error"
+    );
+  }
+};
+
+
+useEffect(() => {
+  if (milkEntry.milkType && milkEntry.fat !== "") {
+    fetchRate(milkEntry.milkType, milkEntry.fat);
+  }
+}, [milkEntry.milkType, milkEntry.fat]);
+
+
+
 
 const handleOpen = () => {
   setEditingId(null);
@@ -564,20 +616,14 @@ const saveMilkEntry = () => {
 
       {/* Rate */}
       <TextField
-        label="Rate Per Liter"
-        type="number"
-        value={milkEntry.ratePerLiter}
-       onChange={(e) => {
-  const rate = Number(e.target.value);
-
-  setMilkEntry({
-    ...milkEntry,
-    ratePerLiter: rate,
-    totalAmount: (milkEntry.quantity || 0) * rate,
-  });
-}}
-      />
-
+  label="Rate Per Liter"
+  type="number"
+  value={milkEntry.ratePerLiter}
+  fullWidth
+  InputProps={{
+    readOnly: true,
+  }}
+/>
       {/* Total */}
       <TextField
   label="Total Amount"
