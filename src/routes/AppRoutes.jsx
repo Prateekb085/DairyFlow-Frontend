@@ -4,6 +4,7 @@ import Login from "../pages/auth/Login";
 import Dashboard from "../pages/dashboard/Dashboard";
 import Farmers from "../pages/farmers/Farmers";
 import MilkEntries from "../pages/milk/MilkEntries";
+import Reports from "../pages/reports/Reports";
 
 export default function AppRoutes() {
   return (
@@ -18,6 +19,9 @@ export default function AppRoutes() {
 
       <Route path="/milk" element={<MilkEntries />} />
       
+      <Route path="/reports" element={<Reports />} />
+
+      <Route path="/reports" element={<Reports />} />
     </Routes>
   );
 }
