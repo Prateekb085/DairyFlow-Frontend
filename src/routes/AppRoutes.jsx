@@ -7,18 +7,26 @@ import Farmers from "../pages/farmers/Farmers";
 import MilkEntries from "../pages/milk/MilkEntries";
 import Reports from "../pages/reports/Reports";
 import Payments from "../pages/payments/Payments";
+import ProtectedRoute from "./ProtectedRoute";
+import Settings from "../pages/settings/Settings";
 
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
       <Route path="/login" element={<Login />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/farmers" element={<Farmers />} />
-      <Route path="/milk" element={<MilkEntries />} />
-      <Route path="/payments" element={<Payments />} />
-      <Route path="/reports" element={<Reports />} />
+
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/farmers" element={<Farmers />} />
+        <Route path="/milk" element={<MilkEntries />} />
+        <Route path="/payments" element={<Payments />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

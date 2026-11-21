@@ -82,24 +82,26 @@ export default function Payments() {
     }
   };
 
-  const updateStatus = async (paymentId, status) => {
-    try {
-      setError("");
-      setMessage("");
 
-      await api.put(`/payments/${paymentId}/status`, null, {
-        params: { status },
-      });
+const updateStatus = async (paymentId) => {
+  try {
+    setError("");
+    setMessage("");
 
-      setMessage(`Payment status updated to ${status}.`);
-      await loadData();
-    } catch (err) {
-      console.error(err);
-      setError(
-        err.response?.data?.message || "Unable to update payment status."
-      );
-    }
-  };
+    await api.put(`/payments/${paymentId}/confirm`, null, {
+      params: { confirmedBy: "admin" },
+    });
+
+    setMessage("Payment confirmed successfully.");
+    await loadData();
+  } catch (err) {
+    console.error(err);
+    setError(
+      err.response?.data?.message || "Unable to confirm payment."
+    );
+  }
+};
+
 
   return (
     <DashboardLayout>
@@ -191,8 +193,12 @@ export default function Payments() {
                         <td style={{ padding: 12 }}>
                           {payment.farmer?.farmerName || "—"}
                         </td>
-                        <td style={{ padding: 12 }}>{payment.fromDate}</td>
-                        <td style={{ padding: 12 }}>{payment.toDate}</td>
+                        <td style={{ padding: 12 }}>
+                        {payment.settlement?.startDate || "—"}
+                      </td>
+                      <td style={{ padding: 12 }}>
+                        {payment.settlement?.endDate || "—"}
+                      </td>
                         <td style={{ padding: 12 }}>
                           ₹{Number(payment.totalAmount || 0).toFixed(2)}
                         </td>
@@ -202,7 +208,7 @@ export default function Payments() {
                             <Button
                               size="small"
                               variant="outlined"
-                              onClick={() => updateStatus(payment.id, "Paid")}
+                              onClick={() => updateStatus(payment.id)}
                             >
                               Mark Paid
                             </Button>
