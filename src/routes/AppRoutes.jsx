@@ -9,6 +9,7 @@ import Reports from "../pages/reports/Reports";
 import Payments from "../pages/payments/Payments";
 import ProtectedRoute from "./ProtectedRoute";
 import Settings from "../pages/settings/Settings";
+import CustomerBills from "../customer/CustomerBills";
 
 export default function AppRoutes() {
   return (
@@ -22,6 +23,7 @@ export default function AppRoutes() {
         <Route path="/farmers" element={<Farmers />} />
         <Route path="/milk" element={<MilkEntries />} />
         <Route path="/payments" element={<Payments />} />
+        <Route path="/customer-bills" element={<CustomerBills />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
       </Route>

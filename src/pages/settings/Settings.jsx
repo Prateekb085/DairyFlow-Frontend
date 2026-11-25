@@ -17,6 +17,8 @@ import {
   CircularProgress,
   IconButton,
   InputAdornment,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 
 import PeopleIcon from "@mui/icons-material/People";
@@ -29,6 +31,8 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import api from "../../services/api";
+
+// SETTINGS ITEMS
 
 const settingsItems = [
   {
@@ -48,7 +52,7 @@ const settingsItems = [
   },
   {
     title: "Payment Configuration",
-    description: "Configure UPI payouts and payment gateway details.",
+    description: "Configure direct UPI payments and payment verification.",
     icon: <AccountBalanceOutlinedIcon />,
   },
   {
@@ -60,7 +64,7 @@ const settingsItems = [
 
 export default function Settings() {
 
-  // ADMIN PROFILE STATE
+  // ================= ADMIN PROFILE STATE =================
 
   const [open, setOpen] = useState(false);
 
@@ -71,7 +75,7 @@ export default function Settings() {
     phone: "",
   });
 
-  // DAIRY INFORMATION STATE
+  // ================= DAIRY INFORMATION STATE =================
 
   const [dairyOpen, setDairyOpen] = useState(false);
 
@@ -89,7 +93,7 @@ export default function Settings() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // SECURITY STATE
+  // ================= SECURITY STATE =================
 
   const [securityOpen, setSecurityOpen] = useState(false);
 
@@ -109,7 +113,24 @@ export default function Settings() {
     confirm: false,
   });
 
-  // ---------------- ADMIN PROFILE ----------------
+  // ================= PAYMENT CONFIGURATION STATE =================
+
+  const [paymentOpen, setPaymentOpen] = useState(false);
+
+  const [paymentConfig, setPaymentConfig] = useState({
+    paymentMethod: "UPI",
+    upiEnabled: true,
+    requireUtr: true,
+    paymentInstructions:
+      "Verify the UPI transaction and reference number before marking payment as paid.",
+  });
+
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const [paymentError, setPaymentError] = useState("");
+
+  // ================= ADMIN PROFILE =================
 
   const handleOpenProfile = async () => {
     setOpen(true);
@@ -187,7 +208,7 @@ export default function Settings() {
     }
   };
 
-  // ---------------- DAIRY INFORMATION ----------------
+  // ================= DAIRY INFORMATION =================
 
   const handleOpenDairy = async () => {
     setDairyOpen(true);
@@ -274,7 +295,7 @@ export default function Settings() {
     }
   };
 
-  // ---------------- SECURITY / CHANGE PASSWORD ----------------
+  // ================= SECURITY / CHANGE PASSWORD =================
 
   const handleOpenSecurity = () => {
     setPasswords({
@@ -370,11 +391,90 @@ export default function Settings() {
     }
   };
 
-  // ---------------- SETTINGS PAGE ----------------
+  // ================= PAYMENT CONFIGURATION =================
+
+  // LOAD PAYMENT CONFIGURATION
+
+  const handleOpenPayment = async () => {
+    setPaymentOpen(true);
+    setPaymentLoading(true);
+    setPaymentError("");
+    setPaymentMessage("");
+
+    try {
+      const response = await api.get("/admin/payment-config");
+
+      setPaymentConfig({
+        paymentMethod: response.data.paymentMethod || "UPI",
+        upiEnabled: response.data.upiEnabled ?? true,
+        requireUtr: response.data.requireUtr ?? true,
+        paymentInstructions:
+          response.data.paymentInstructions || "",
+      });
+
+    } catch (err) {
+      setPaymentError(
+        err.response?.data?.message ||
+        "Unable to load payment configuration."
+      );
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // HANDLE PAYMENT INPUT CHANGES
+
+  const handlePaymentChange = (event) => {
+    const { name, value, checked, type } = event.target;
+
+    setPaymentConfig((previous) => ({
+      ...previous,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  // SAVE PAYMENT CONFIGURATION
+
+  const handleSavePayment = async () => {
+    setPaymentError("");
+    setPaymentMessage("");
+
+    setPaymentSaving(true);
+
+    try {
+      const response = await api.put(
+        "/admin/payment-config",
+        paymentConfig
+      );
+
+      setPaymentConfig({
+        paymentMethod: response.data.paymentMethod || "UPI",
+        upiEnabled: response.data.upiEnabled ?? true,
+        requireUtr: response.data.requireUtr ?? true,
+        paymentInstructions:
+          response.data.paymentInstructions || "",
+      });
+
+      setPaymentMessage(
+        "Payment configuration updated successfully!"
+      );
+
+    } catch (err) {
+      setPaymentError(
+        err.response?.data?.message ||
+        "Unable to update payment configuration."
+      );
+    } finally {
+      setPaymentSaving(false);
+    }
+  };
+
+  // ================= SETTINGS PAGE =================
 
   return (
     <DashboardLayout>
       <Box>
+
         <Typography variant="h4" fontWeight={700} mb={1}>
           Settings
         </Typography>
@@ -383,9 +483,13 @@ export default function Settings() {
           Manage your DairyFlow application settings.
         </Typography>
 
+        {/* SETTINGS CARDS */}
+
         <Grid container spacing={3}>
           {settingsItems.map((item) => (
+
             <Grid item xs={12} sm={6} md={4} key={item.title}>
+
               <Card
                 sx={{
                   height: "100%",
@@ -393,7 +497,9 @@ export default function Settings() {
                   boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
                 }}
               >
+
                 <CardContent sx={{ p: 3 }}>
+
                   <Box
                     sx={{
                       color: "#2563EB",
@@ -418,7 +524,8 @@ export default function Settings() {
                     disabled={
                       item.title !== "Admin Profile" &&
                       item.title !== "Dairy Information" &&
-                      item.title !== "Security"
+                      item.title !== "Security" &&
+                      item.title !== "Payment Configuration"
                     }
                     onClick={() => {
                       if (item.title === "Admin Profile") {
@@ -427,23 +534,29 @@ export default function Settings() {
                         handleOpenDairy();
                       } else if (item.title === "Security") {
                         handleOpenSecurity();
+                      } else if (item.title === "Payment Configuration") {
+                        handleOpenPayment();
                       }
                     }}
                   >
                     {item.title === "Admin Profile" ||
                     item.title === "Dairy Information" ||
-                    item.title === "Security"
+                    item.title === "Security" ||
+                    item.title === "Payment Configuration"
                       ? "Configure"
                       : "Coming Soon"}
                   </Button>
+
                 </CardContent>
               </Card>
+
             </Grid>
           ))}
         </Grid>
+
       </Box>
 
-      {/* ADMIN PROFILE DIALOG */}
+      {/* ================= ADMIN PROFILE DIALOG ================= */}
 
       <Dialog
         open={open}
@@ -451,17 +564,21 @@ export default function Settings() {
         fullWidth
         maxWidth="sm"
       >
+
         <DialogTitle fontWeight={700}>
           Admin Profile
         </DialogTitle>
 
         <DialogContent>
+
           {loading ? (
             <Box display="flex" justifyContent="center" p={4}>
               <CircularProgress />
             </Box>
           ) : (
+
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+
               {error && <Alert severity="error">{error}</Alert>}
               {message && <Alert severity="success">{message}</Alert>}
 
@@ -500,11 +617,14 @@ export default function Settings() {
                 inputProps={{ maxLength: 10 }}
                 required
               />
+
             </Box>
           )}
+
         </DialogContent>
 
         <DialogActions sx={{ p: 3 }}>
+
           <Button
             onClick={() => setOpen(false)}
             color="inherit"
@@ -524,10 +644,12 @@ export default function Settings() {
               "Save Changes"
             )}
           </Button>
+
         </DialogActions>
+
       </Dialog>
 
-      {/* DAIRY INFORMATION DIALOG */}
+      {/* ================= DAIRY INFORMATION DIALOG ================= */}
 
       <Dialog
         open={dairyOpen}
@@ -535,17 +657,21 @@ export default function Settings() {
         fullWidth
         maxWidth="sm"
       >
+
         <DialogTitle fontWeight={700}>
           Dairy Information
         </DialogTitle>
 
         <DialogContent>
+
           {loading ? (
             <Box display="flex" justifyContent="center" p={4}>
               <CircularProgress />
             </Box>
           ) : (
+
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+
               {error && <Alert severity="error">{error}</Alert>}
               {message && <Alert severity="success">{message}</Alert>}
 
@@ -587,11 +713,14 @@ export default function Settings() {
                 onChange={handleDairyChange}
                 fullWidth
               />
+
             </Box>
           )}
+
         </DialogContent>
 
         <DialogActions sx={{ p: 3 }}>
+
           <Button
             onClick={() => setDairyOpen(false)}
             color="inherit"
@@ -611,10 +740,12 @@ export default function Settings() {
               "Save Changes"
             )}
           </Button>
+
         </DialogActions>
+
       </Dialog>
 
-      {/* SECURITY / CHANGE PASSWORD DIALOG */}
+      {/* ================= SECURITY / CHANGE PASSWORD DIALOG ================= */}
 
       <Dialog
         open={securityOpen}
@@ -622,11 +753,13 @@ export default function Settings() {
         fullWidth
         maxWidth="sm"
       >
+
         <DialogTitle fontWeight={700}>
           Change Password
         </DialogTitle>
 
         <DialogContent>
+
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
 
             <Typography color="text.secondary">
@@ -719,9 +852,11 @@ export default function Settings() {
             />
 
           </Box>
+
         </DialogContent>
 
         <DialogActions sx={{ p: 3 }}>
+
           <Button
             onClick={() => setSecurityOpen(false)}
             color="inherit"
@@ -741,7 +876,125 @@ export default function Settings() {
               "Update Password"
             )}
           </Button>
+
         </DialogActions>
+
+      </Dialog>
+
+      {/* ================= PAYMENT CONFIGURATION DIALOG ================= */}
+
+      <Dialog
+        open={paymentOpen}
+        onClose={() => !paymentSaving && setPaymentOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+
+        <DialogTitle fontWeight={700}>
+          Payment Configuration
+        </DialogTitle>
+
+        <DialogContent>
+
+          {paymentLoading ? (
+
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress />
+            </Box>
+
+          ) : (
+
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 3,
+                mt: 1,
+              }}
+            >
+
+              {paymentError && (
+                <Alert severity="error">
+                  {paymentError}
+                </Alert>
+              )}
+
+              {paymentMessage && (
+                <Alert severity="success">
+                  {paymentMessage}
+                </Alert>
+              )}
+
+              <TextField
+                label="Payment Method"
+                value="Direct UPI"
+                fullWidth
+                disabled
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    name="upiEnabled"
+                    checked={paymentConfig.upiEnabled}
+                    onChange={handlePaymentChange}
+                  />
+                }
+                label="Enable UPI Payments"
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    name="requireUtr"
+                    checked={paymentConfig.requireUtr}
+                    onChange={handlePaymentChange}
+                  />
+                }
+                label="Require UTR / Transaction Reference"
+              />
+
+              <TextField
+                label="Payment Instructions"
+                name="paymentInstructions"
+                value={paymentConfig.paymentInstructions}
+                onChange={handlePaymentChange}
+                multiline
+                rows={4}
+                fullWidth
+                inputProps={{ maxLength: 1000 }}
+                helperText="Instructions displayed to the admin during payment processing."
+              />
+
+            </Box>
+          )}
+
+        </DialogContent>
+
+        <DialogActions sx={{ p: 3 }}>
+
+          <Button
+            onClick={() => setPaymentOpen(false)}
+            color="inherit"
+            disabled={paymentSaving}
+          >
+            Close
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleSavePayment}
+            disabled={paymentLoading || paymentSaving}
+          >
+            {paymentSaving ? (
+              <CircularProgress size={22} color="inherit" />
+            ) : (
+              "Save Configuration"
+            )}
+          </Button>
+
+        </DialogActions>
+
       </Dialog>
 
     </DashboardLayout>
